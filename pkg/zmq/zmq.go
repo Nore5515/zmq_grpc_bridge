@@ -14,21 +14,23 @@ func InitializeZMQ(wg *sync.WaitGroup) {
 	fmt.Printf("Connecting to the server...\n")
 	s, _ := zctx.NewSocket(zmq.REQ)
 	s.Connect("tcp://192.168.0.40:5555")
+	wg.Add(1)
+	go listenToResponse(s, wg)
 	fmt.Println("ZMQ Initialized")
 	wg.Done()
 }
 
-func makeZMQRequest(s *zmq.Socket, message string) {
+func MakeZMQRequest(s *zmq.Socket, message string) {
 	s.Send(message, 0)
 }
 
-func listenToResponse(s *zmq.Socket) {
+func listenToResponse(s *zmq.Socket, wg *sync.WaitGroup) {
 	msg, _ := s.Recv(0)
 	fmt.Println("RESPONSE: ", msg)
+	wg.Done()
 }
 
-func createSubscriber(wg *sync.WaitGroup) {
-	wg.Add(1)
+func createSubscriber() {
 	zctx, _ := zmq.NewContext()
 	sub, _ := zctx.NewSocket(zmq.SUB)
 	sub.Connect("tcp://192.168.0.40:5556")
@@ -41,6 +43,5 @@ func createSubscriber(wg *sync.WaitGroup) {
 			break
 		}
 	}
-	wg.Done()
 
 }

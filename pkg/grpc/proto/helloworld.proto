@@ -27,9 +27,14 @@ package helloworld;
 service Greeter {
   // Send request to ZMQ, recieve response
   rpc SendZMQRequest (Request) returns (Response) {}
+
+  // Front End request subscription
+  rpc RequestSubscription (ClientDetails) returns (Response) {}
+
   // Handle Subscription/Unsubscription from client
   rpc HandleClientSubscription (ClientDetails) returns (Response) {}
   rpc HandleClientUnsubscription (ClientDetails) returns (Response) {}
+  
   // Starts streaming data to all subscribers
   rpc StartStream (google.protobuf.Empty) returns (stream StreamData) {}
 }

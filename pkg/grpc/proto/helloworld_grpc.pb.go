@@ -16,7 +16,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: proto/helloworld.proto
+// source: pkg/grpc/proto/helloworld.proto
 
 package proto
 
@@ -35,6 +35,7 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	Greeter_SendZMQRequest_FullMethodName             = "/helloworld.Greeter/SendZMQRequest"
+	Greeter_RequestSubscription_FullMethodName        = "/helloworld.Greeter/RequestSubscription"
 	Greeter_HandleClientSubscription_FullMethodName   = "/helloworld.Greeter/HandleClientSubscription"
 	Greeter_HandleClientUnsubscription_FullMethodName = "/helloworld.Greeter/HandleClientUnsubscription"
 	Greeter_StartStream_FullMethodName                = "/helloworld.Greeter/StartStream"
@@ -46,6 +47,8 @@ const (
 type GreeterClient interface {
 	// Send request to ZMQ, recieve response
 	SendZMQRequest(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error)
+	// Front End request subscription
+	RequestSubscription(ctx context.Context, in *ClientDetails, opts ...grpc.CallOption) (*Response, error)
 	// Handle Subscription/Unsubscription from client
 	HandleClientSubscription(ctx context.Context, in *ClientDetails, opts ...grpc.CallOption) (*Response, error)
 	HandleClientUnsubscription(ctx context.Context, in *ClientDetails, opts ...grpc.CallOption) (*Response, error)
@@ -64,6 +67,15 @@ func NewGreeterClient(cc grpc.ClientConnInterface) GreeterClient {
 func (c *greeterClient) SendZMQRequest(ctx context.Context, in *Request, opts ...grpc.CallOption) (*Response, error) {
 	out := new(Response)
 	err := c.cc.Invoke(ctx, Greeter_SendZMQRequest_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *greeterClient) RequestSubscription(ctx context.Context, in *ClientDetails, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, Greeter_RequestSubscription_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,6 +138,8 @@ func (x *greeterStartStreamClient) Recv() (*StreamData, error) {
 type GreeterServer interface {
 	// Send request to ZMQ, recieve response
 	SendZMQRequest(context.Context, *Request) (*Response, error)
+	// Front End request subscription
+	RequestSubscription(context.Context, *ClientDetails) (*Response, error)
 	// Handle Subscription/Unsubscription from client
 	HandleClientSubscription(context.Context, *ClientDetails) (*Response, error)
 	HandleClientUnsubscription(context.Context, *ClientDetails) (*Response, error)
@@ -140,6 +154,9 @@ type UnimplementedGreeterServer struct {
 
 func (UnimplementedGreeterServer) SendZMQRequest(context.Context, *Request) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SendZMQRequest not implemented")
+}
+func (UnimplementedGreeterServer) RequestSubscription(context.Context, *ClientDetails) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestSubscription not implemented")
 }
 func (UnimplementedGreeterServer) HandleClientSubscription(context.Context, *ClientDetails) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleClientSubscription not implemented")
@@ -177,6 +194,24 @@ func _Greeter_SendZMQRequest_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GreeterServer).SendZMQRequest(ctx, req.(*Request))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Greeter_RequestSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClientDetails)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GreeterServer).RequestSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Greeter_RequestSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GreeterServer).RequestSubscription(ctx, req.(*ClientDetails))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -250,6 +285,10 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Greeter_SendZMQRequest_Handler,
 		},
 		{
+			MethodName: "RequestSubscription",
+			Handler:    _Greeter_RequestSubscription_Handler,
+		},
+		{
 			MethodName: "HandleClientSubscription",
 			Handler:    _Greeter_HandleClientSubscription_Handler,
 		},
@@ -265,5 +304,5 @@ var Greeter_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "proto/helloworld.proto",
+	Metadata: "pkg/grpc/proto/helloworld.proto",
 }
